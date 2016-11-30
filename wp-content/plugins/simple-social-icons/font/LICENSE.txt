@@ -10,12 +10,16 @@ Font license info
    Homepage:  http://www.entypo.com
 
 
-## Web Symbols
+## Font Awesome
 
-   Copyright (c) 2011 by Just Be Nice studio. All rights reserved.
+   Copyright (c) Dave Gandy
 
-   Author:    Just Be Nice studio
+   Author:    Dave Gandy
    License:   SIL (http://scripts.sil.org/OFL)
-   Homepage:  http://www.justbenicestudio.com/studio/websymbols/
+   Homepage:  http://fortawesome.github.io/Font-Awesome/
 
 
+## Social Extention
+
+   The rights to each pictogram in the social extention are either trademarked or copyrighted by the respective company.
+   Icons that are included in the social extention can be identified at http://www.entypo.com/.

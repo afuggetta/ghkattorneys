@@ -3,7 +3,7 @@
 Module Name: Synved Option
 Description: Easily add options to your themes or plugins with as little or as much coding as you want. Just create an array of your options, the rest is automated. If you need extra flexibility you can then use the powerful API provided to achieve any level of customization.
 Author: Synved
-Version: 1.4.3
+Version: 1.4.8
 Author URI: http://synved.com/
 License: GPLv2
 
@@ -25,8 +25,8 @@ include_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'synved-option-setting.ph
 
 
 define('SYNVED_OPTION_LOADED', true);
-define('SYNVED_OPTION_VERSION', 100040003);
-define('SYNVED_OPTION_VERSION_STRING', '1.4.3');
+define('SYNVED_OPTION_VERSION', 100040008);
+define('SYNVED_OPTION_VERSION_STRING', '1.4.8');
 
 
 $synved_option = array();
@@ -573,15 +573,9 @@ function synved_option_group_default($id)
 function synved_option_wp_handle_setting($id, $page, $section, $name, $item)
 {
 	$type = synved_option_item_type($item);
-	$hidden = synved_option_item_hidden($item);
 	$label = synved_option_item_label($item);
 	$sections = isset($item['sections']) ? $item['sections'] : null;
 	$settings = isset($item['settings']) ? $item['settings'] : null;
-	
-	if ($hidden)
-	{
-		return;
-	}
 	
 	if ($type == 'options-page')
 	{
@@ -754,6 +748,29 @@ function synved_option_print_head_outputs()
 			}
 		}
 	}
+
+	$fb_app_id = synved_option_get( 'synved_social', 'fb_app_id' );
+	if ( $fb_app_id ) {
+		printf( '<meta property="fb:app_id" content="%s" />', esc_attr( $fb_app_id ) );
+		echo '<script>
+			window.fbAsyncInit = function() {
+				FB.init({
+					appId      : ' . esc_attr( $fb_app_id ) . ',
+					xfbml      : true,
+					version    : \'v2.8\'
+				});
+				FB.AppEvents.logPageView();
+			};
+
+			(function(d, s, id){
+				var js, fjs = d.getElementsByTagName(s)[0];
+				if (d.getElementById(id)) {return;}
+				js = d.createElement(s); js.id = id;
+				js.src = "https://connect.facebook.net/en_US/sdk.js";
+				fjs.parentNode.insertBefore(js, fjs);
+			}(document, \'script\', \'facebook-jssdk\'));
+		</script>';
+	}
 }
 
 function synved_option_wp_after_setup_theme()
@@ -854,6 +871,11 @@ function synved_option_wp_upgrader_source_selection($source, $remote_source, $ob
 
 function synved_option_wp_upgrader_pre_install($perform, $extra)
 {
+	if (!isset($extra['plugin']))
+	{
+		return $perform;
+	}
+	
 	$upgrade_transfer = get_option('synved_option_wp_upgrade_addon_transfer');
 	
 	if ($upgrade_transfer != null)
@@ -889,7 +911,7 @@ function synved_option_wp_upgrader_pre_install($perform, $extra)
 	
 	$dir = get_temp_dir();
 	$name = time();
-	$dir = $dir . wp_unique_filename($dir, $name) . DIRECTORY_SEPARATOR;
+	$dir = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . wp_unique_filename($dir, $name) . DIRECTORY_SEPARATOR;
 	$list = array();
 	
 	foreach ($module_list as $module_id)
@@ -1006,23 +1028,52 @@ function synved_option_admin_enqueue_scripts()
 	$uri = synved_option_path_uri();
 	
 	wp_register_style('synved-option-jquery-ui', $uri . '/jqueryUI/css/snvdopt/jquery-ui-1.9.2.custom.min.css', false, '1.9.2');
-	wp_register_style('synved-option-admin', $uri . '/style/admin.css', array('wp-jquery-ui-dialog'), '1.0');
+	wp_register_style('synved-option-admin', $uri . '/style/admin.css', array('wp-jquery-ui-dialog', 'synved-option-jquery-ui'), '1.0');
 	
 	wp_register_script('synved-option-script-custom', $uri . '/script/custom.js', array('jquery', 'suggest', 'media-upload', 'thickbox', 'jquery-ui-core', 'jquery-ui-progressbar', 'jquery-ui-dialog'), '1.0.0');
 	wp_localize_script('synved-option-script-custom', 'SynvedOptionVars', array('flash_swf_url' => includes_url('js/plupload/plupload.flash.swf'), 'silverlight_xap_url' => includes_url('js/plupload/plupload.silverlight.xap'), 'ajaxurl' => admin_url('admin-ajax.php'), 'synvedSecurity' => wp_create_nonce('synved-option-submit-nonce')));
 	
-	wp_enqueue_style('thickbox');
-	wp_enqueue_style('farbtastic');
-	wp_enqueue_style('wp-pointer');
-	wp_enqueue_style('synved-option-jquery-ui');
-	wp_enqueue_style('synved-option-admin');
+	$page = isset($_GET['page']) ? $_GET['page'] : null;
+	$enqueue = false;
 	
-	wp_enqueue_script('plupload-all');
-	wp_enqueue_script('media-upload');
-	wp_enqueue_script('suggest');
-	wp_enqueue_script('thickbox');
-	wp_enqueue_script('farbtastic');
-	wp_enqueue_script('synved-option-script-custom');
+	global $synved_option_list;
+	
+	if ($synved_option_list != null)
+	{
+		foreach ($synved_option_list as $id => $list)
+		{
+			if (isset($list['pages']) && $list['pages'] != null)
+			{
+				$page_list = $list['pages'];
+				
+				foreach ($page_list as $name => $page_object)
+				{
+					if ($page == synved_option_page_slug($id, $name))
+					{
+						$enqueue = true;
+				
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	if ($enqueue)
+	{
+		wp_enqueue_style('thickbox');
+		wp_enqueue_style('farbtastic');
+		wp_enqueue_style('wp-pointer');
+		wp_enqueue_style('synved-option-jquery-ui');
+		wp_enqueue_style('synved-option-admin');
+	
+		wp_enqueue_script('plupload-all');
+		wp_enqueue_script('media-upload');
+		wp_enqueue_script('suggest');
+		wp_enqueue_script('thickbox');
+		wp_enqueue_script('farbtastic');
+		wp_enqueue_script('synved-option-script-custom');
+	}
 }
 
 function synved_option_ajax()

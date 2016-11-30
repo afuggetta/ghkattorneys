@@ -26,7 +26,7 @@ function synved_option_page_slug($id, $name, $item = null)
 	{
 		global $synved_option_list;
 		
-		if (isset($synved_option_list[$id]['pages'][$name]))
+		if (isset($synved_option_list[$id]['pages'][$name]['wp-page-slug']))
 		{
 			return $synved_option_list[$id]['pages'][$name]['wp-page-slug'];
 		}
@@ -64,6 +64,7 @@ function synved_option_page_cb($id, $name, $item)
 	$title = synved_option_item_title($item);
 	$tip = synved_option_item_tip($item);
 	$role = synved_option_item_role($item);
+	$style = synved_option_item_style($item);
 	
 	if (!current_user_can($role))
 	{
@@ -75,8 +76,17 @@ function synved_option_page_cb($id, $name, $item)
 		$title = $label;
 	}
 	
+	$class = 'wrap';
+	
+	if ($style != null)
+	{
+		foreach ($style as $style_name)
+		{
+			$class .= ' ' . 'synved-option-style-' . $style_name;
+		}
+	}
 ?>
-	<div class="wrap">
+	<div class="<?php echo esc_attr($class); ?>">
 		<div class="icon32" id="icon-options-general"><br/></div>
 		<h2><?php echo $title; ?></h2>
 		<p><?php echo $tip; ?></p>
@@ -84,10 +94,39 @@ function synved_option_page_cb($id, $name, $item)
 		<?php settings_fields($group); ?>
 		<?php 
 			$page_slug = synved_option_page_slug($id, $name, $item);
-			synved_option_render_page($page_slug); 
+			synved_option_render_page($page_slug);
 		?>
 		<p class="submit">
 			<input name="Submit" type="submit" class="button-primary" value="<?php esc_attr_e('Save Changes'); ?>" />
+		<?php
+			$render_fragment = synved_option_item_render_fragment($item);
+			$out = null;
+	
+			if ($render_fragment != null)
+			{
+				$error = null;
+				$new_out = null;
+		
+				try
+				{
+					$params = array();
+					$new_out = $render_fragment->Invoke(array('page-submit-tail', '', $params, $name, $id, $item));
+				}
+				catch (Exception $ex)
+				{
+					$new_out = null;
+			
+					$error = $ex->getMessage();
+				}
+		
+				if ($new_out !== null)
+				{
+					$out = $new_out;
+				}
+			}
+			
+			echo $out;
+		?>
 		</p>
 		</form>
 	</div>

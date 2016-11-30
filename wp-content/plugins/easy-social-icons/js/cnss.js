@@ -15,11 +15,11 @@ jQuery(document).ready(function($) {
 	jQuery('ul.cnss-social-icon li img').hover(function() {
 		jQuery(this).animate({
 			opacity: 0.5
-		  }, 200 );
+		  }, {duration:200, queue:false} );
 	},
 	function() {
 		jQuery(this).animate({
 			opacity: 1
-		  }, 200 );
+		  }, {duration:200, queue:false} );
 	});
 });
